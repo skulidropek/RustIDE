@@ -1,0 +1,40 @@
+/* CodeEditor.css */
+
+.container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    background-color: #1e1e1e; /* Тёмный фон */
+    box-sizing: border-box;
+  }
+  
+  .editorContainer {
+    flex-grow: 1;
+    border: 1px solid #333;
+    border-radius: 4px;
+    margin: 10px;
+    overflow: hidden;
+    background-color: #1e1e1e;
+  }
+  
+  .button {
+    height: 40px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    width: calc(100% - 20px); /* Ширина кнопки с учётом отступов */
+    align-self: center; /* Центровка кнопки */
+  }
+  
+  .errorContainer {
+    color: red;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  

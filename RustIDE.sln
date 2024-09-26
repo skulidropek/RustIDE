@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34723.18
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RustIDE.Server", "RustIDE.Server\RustIDE.Server.csproj", "{BDB34099-EDF4-409A-B139-F045FCDA7CD5}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "rustide.client", "rustide.client\rustide.client.esproj", "{DE996DF1-7445-427F-BF51-4BAE86B75541}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BDB34099-EDF4-409A-B139-F045FCDA7CD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDB34099-EDF4-409A-B139-F045FCDA7CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDB34099-EDF4-409A-B139-F045FCDA7CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDB34099-EDF4-409A-B139-F045FCDA7CD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE996DF1-7445-427F-BF51-4BAE86B75541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE996DF1-7445-427F-BF51-4BAE86B75541}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE996DF1-7445-427F-BF51-4BAE86B75541}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{DE996DF1-7445-427F-BF51-4BAE86B75541}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE996DF1-7445-427F-BF51-4BAE86B75541}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE996DF1-7445-427F-BF51-4BAE86B75541}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DD90A3BA-EFFB-4B8C-A995-50A94D77EABF}
+	EndGlobalSection
+EndGlobal

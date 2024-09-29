@@ -19,7 +19,7 @@ namespace RustIDE.Server.Controllers
     public class CompletionController : ControllerBase
     {
         [HttpPost]
-        public async Task<IActionResult> GetCompletions([FromBody] CompletionRequest request)
+        public async Task<ActionResult<IEnumerable<CompletionItem>>> GetCompletions([FromBody] CompletionRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.Code))
             {
@@ -45,11 +45,18 @@ namespace RustIDE.Server.Controllers
             {
                 Label = item.DisplayText,
                 Kind = ConvertCompletionItemKind(item.Tags),
-                InsertText = item.DisplayText,
-                Detail = item.InlineDescription
-            });
+                InsertText = item.Properties.TryGetValue("InsertText", out var insertText) ? insertText : item.DisplayText,
+                Detail = item.InlineDescription,
+                Documentation = item.Properties.TryGetValue("Documentation", out var doc) ? doc : null,
+                CommitCharacters = item.Rules.CommitCharacterRules.IsDefaultOrEmpty
+                ? null
+                : item.Rules.CommitCharacterRules
+                    .SelectMany(rule => rule.Characters)
+                    .Select(c => c.ToString())
+                    .ToArray(),
+            }).ToArray();
 
-            return Ok(result);
+            return result;
         }
 
         private Document CreateDocument(string code)

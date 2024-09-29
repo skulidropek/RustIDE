@@ -18,10 +18,10 @@ namespace RustIDE.Server.Controllers
         }
 
         [HttpPost("compile")]
-        public async Task<IActionResult> Compile([FromBody] CodeRequest request)
+        public async Task<ActionResult<CompilationResult>> Compile([FromBody] CodeRequest request)
         {
             var result = await _codeExecutorService.Compile(request.Code);
-            return Ok(result);
+            return result;
         }
     }
 }

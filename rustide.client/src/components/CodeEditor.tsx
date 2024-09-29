@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
-import axios from 'axios';
 import './CodeEditor.css';
-import { SyntaxConfig, TokenRule, TokenAction } from '../models/SyntaxConfig';
-import { CompilationError, CompilationResult } from '../models/CompilationResult';
+import { Client, CodeRequest, CompilationResult, MonarchLanguage, MonarchLanguageRule, MonarchLanguageAction, ICompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../api-client';
+import { languages } from 'monaco-editor/esm/vs/editor/editor.api';
+import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
+type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
 const CodeEditor: React.FC = () => {
-  const [code, setCode] = useState(`using Oxide.Core.Plugins;
+  const [code, setCode] = useState<string>(`using Oxide.Core.Plugins;
 using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
@@ -33,11 +34,12 @@ namespace Oxide.Plugins
         }
     }
 }`);
-
-  const [errors, setErrors] = useState<CompilationError[]>([]);
+  
+  const [errors, setErrors] = useState<CompilationResult[]>([]);
   const [output, setOutput] = useState<string>('');
   const [syntaxConfig, setSyntaxConfig] = useState<SyntaxConfig | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const client = new Client("https://localhost:7214");
 
   const onChange = (newValue: string) => {
     setCode(newValue);
@@ -45,132 +47,94 @@ namespace Oxide.Plugins
 
   const loadSyntaxConfig = async () => {
     try {
-      const response = await axios.get<SyntaxConfig>('https://localhost:7214/api/editorconfig/syntax');
-      setSyntaxConfig(response.data);
-      console.log('Loaded syntax config:', response.data);
+      const response = await client.syntax();
+      setSyntaxConfig(response);
     } catch (error) {
-      console.error('Error loading syntax config:', error);
+      setErrors([new CompilationResult({
+        errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to load syntax config.', severity: 'Error' })],
+      })]);
     }
   };
 
   const checkCode = async () => {
     try {
-      const response = await axios.post<CompilationResult>('https://localhost:7214/api/code/compile', { code });
-      const result = response.data;
-
+      const request = new CodeRequest({ code });
+      const result: CompilationResult = await client.compile(request);
       if (result.success) {
+        setOutput(result.output ?? "");
         setErrors([]);
-        setOutput(result.output);
-        if (editorRef.current) {
-          monaco.editor.setModelMarkers(editorRef.current.getModel()!, 'owner', []);
-        }
       } else {
-        setOutput('');
-        setErrors(result.errors);
-        addMarkers(result.errors);
+        setErrors(result.errors ?? []);
       }
     } catch (error) {
-      console.error('Error during compilation:', error);
-      setErrors([{
-        startLine: 0, startColumn: 0, endLine: 0, endColumn: 0,
-        message: 'Failed to connect to the server.', severity: 'Error'
-      }]);
+      setErrors([new CompilationResult({
+        errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to connect to the server.', severity: 'Error' })],
+      })]);
       setOutput('');
     }
   };
 
-  const addMarkers = (errors: CompilationError[]) => {
-    if (editorRef.current) {
-      const model = editorRef.current.getModel();
-      if (model) {
-        const markers = errors.map((error) => ({
-          startLineNumber: error.startLine,
-          startColumn: error.startColumn,
-          endLineNumber: error.endLine,
-          endColumn: error.endColumn,
-          message: error.message,
-          severity: monaco.MarkerSeverity.Error,
-        }));
-
-        monaco.editor.setModelMarkers(model, 'owner', markers);
-      }
-    }
-  };
-
   useEffect(() => {
-    loadSyntaxConfig();
-  }, []);
-
-  useEffect(() => {
-    if (syntaxConfig) {
-      console.log('Configuring Monaco Editor with syntax config:', syntaxConfig);
-      
+    if (syntaxConfig?.monarchLanguage && syntaxConfig?.languageConfiguration) {
       monaco.languages.register({ id: 'csharp' });
-
-      const convertTokenRules = (rules: TokenRule[]): monaco.languages.IMonarchLanguageRule[] => {
-        return rules.map(rule => ({
-          regex: rule.regex,
-          action: rule.action ? convertTokenAction(rule.action) : '',
-          include: rule.include
-        }));
-      };
-
-      const convertTokenAction = (action: TokenAction): string | monaco.languages.IMonarchLanguageAction => {
-        if (action === null || action === undefined) {
-          console.warn('Received null or undefined TokenAction');
-          return '';
-        }
-
+  
+      const convertTokenAction = (action: MonarchLanguageAction | string): monaco.languages.IMonarchLanguageAction => {
         if (typeof action === 'string') {
-          return action;
+          return { token: action };
         }
-
-        if (typeof action === 'object') {
-          if (action.token && !action.next && !action.cases) {
-            return action.token;
-          }
-          return {
-            token: action.token || '',
-            next: action.next,
-            cases: action.cases
-          };
-        }
-
-        console.warn('Unexpected TokenAction format:', action);
-        return '';
+        const result: monaco.languages.IMonarchLanguageAction = {};
+        if (action.token) result.token = action.token;
+        if (action.next) result.next = action.next;
+        if (action.cases) result.cases = action.cases;
+        return Object.keys(result).length === 0 ? { token: 'source' } : result;
       };
-
+  
+      const convertTokenRules = (rules: MonarchLanguageRule[]): monaco.languages.IMonarchLanguageRule[] => {
+        return rules.map(rule => {
+          const convertedRule: monaco.languages.IMonarchLanguageRule = {
+            regex: rule.regex!,
+          };
+          if (rule.action) {
+            convertedRule.action = convertTokenAction(rule.action);
+          }
+          if (rule.include) {
+            convertedRule.include = rule.include;
+          }
+          return convertedRule;
+        });
+      };
+  
       const tokenizer: { [key: string]: monaco.languages.IMonarchLanguageRule[] } = {};
-      for (const [key, rules] of Object.entries(syntaxConfig.tokenizer)) {
-        if (Array.isArray(rules)) {
+      if (syntaxConfig.monarchLanguage.tokenizer) {
+        for (const [key, rules] of Object.entries(syntaxConfig.monarchLanguage.tokenizer)) {
           tokenizer[key] = convertTokenRules(rules);
-        } else {
-          console.warn(`Unexpected format for tokenizer rule set '${key}':`, rules);
         }
       }
-
+  
+      tokenizer['symbols'] = [{ regex: /[=><!~?:&|+\-*\/\^%]+/, action: { token: 'operator' } }];
+  
       monaco.languages.setMonarchTokensProvider('csharp', {
-        defaultToken: '',
-        tokenPostfix: '.cs',
-        keywords: syntaxConfig.keywords,
-        operators: syntaxConfig.operators,
-        symbols: /[=><!~?:&|+\-*\/\^%]+/,
-        escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
-        tokenizer: tokenizer
+        tokenizer,
+        defaultToken: syntaxConfig.monarchLanguage.defaultToken || 'source',
+        tokenPostfix: syntaxConfig.monarchLanguage.tokenPostfix || '.cs',
       });
-
+  
+      const comments: monaco.languages.CommentRule = {
+        lineComment: syntaxConfig.languageConfiguration.comments?.lineComment,
+        blockComment: syntaxConfig.languageConfiguration.comments?.blockComment
+          ? [syntaxConfig.languageConfiguration.comments.blockComment.open!, syntaxConfig.languageConfiguration.comments.blockComment.close!]
+          : undefined,
+      };
+  
       monaco.languages.setLanguageConfiguration('csharp', {
-        comments: {
-          lineComment: syntaxConfig.comments.lineComment,
-          blockComment: syntaxConfig.comments.blockComment as [string, string]
-        },
-        brackets: syntaxConfig.brackets.map(b => [b.open, b.close] as [string, string]),
+        comments: comments,
+        brackets: syntaxConfig.languageConfiguration.brackets?.map(b => [b.open!, b.close!]) || [],
         autoClosingPairs: [
           { open: '{', close: '}' },
           { open: '[', close: ']' },
           { open: '(', close: ')' },
-          { open: '"', close: '"', notIn: ['string'] },
-          { open: "'", close: "'", notIn: ['string', 'comment'] }
+          { open: '"', close: '"' },
+          { open: "'", close: "'" }
         ],
         surroundingPairs: [
           { open: '{', close: '}' },
@@ -180,53 +144,66 @@ namespace Oxide.Plugins
           { open: "'", close: "'" }
         ]
       });
-
-      // Добавляем провайдер автодополнения
-      monaco.languages.registerCompletionItemProvider('csharp', {
-        triggerCharacters: ['.'],
-        provideCompletionItems: async (model, position) => {
-          const wordUntilPosition = model.getWordUntilPosition(position);
-          const word = wordUntilPosition.word;
-      
-          try {
-            const response = await axios.post('https://localhost:7214/api/completion', {
-              code: model.getValue(),
-              position: model.getOffsetAt(position)
-            });
-      
-            const suggestions = response.data.map((item: any) => ({
-              label: item.label,
-              kind: monaco.languages.CompletionItemKind[item.kind],
-              insertText: item.kind === 'Method' ? `${item.insertText}()` : item.insertText, // Если метод, добавляем скобки
-              detail: item.detail,
-              range: {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: wordUntilPosition.startColumn,
-                endColumn: wordUntilPosition.endColumn
-              }
-            }));
-      
-            return { suggestions };
-          } catch (error) {
-            console.error('Error fetching completions:', error);
-            return { suggestions: [] };
-          }
-        }
-      });
-
-      if (editorRef.current) {
-        editorRef.current.addCommand(
-          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-          () => {
-            checkCode();
-          }
-        );
-      }
-
-      console.log('Monaco Editor configuration complete');
     }
   }, [syntaxConfig]);
+  
+  monaco.languages.registerCompletionItemProvider('csharp', {
+    triggerCharacters: ['.'],
+    provideCompletionItems: async (model, position, context, token) : Promise<monaco.languages.CompletionList> => {
+      const wordUntilPosition = model.getWordUntilPosition(position);
+      
+      // Логируем позицию, текущий код и контекст триггера
+      console.log("Запрос автодополнения. Позиция:", position);
+      console.log("Контекст триггера:", context);
+      console.log("Код на момент вызова:", model.getValue());
+  
+      try {
+        const request = new CompletionRequest({
+          code: model.getValue(),
+          position: model.getOffsetAt(position),
+        });
+  
+        // Логируем запрос перед отправкой
+        console.log("Отправляем запрос на сервер автодополнения:", request);
+  
+        const response = await client.completion(request);
+  
+        // Логируем ответ от сервера
+        console.log("Ответ от сервера автодополнения:", response);
+  
+        const suggestions = response.map((item: CompletionItem) => ({
+          label: item.label ?? "",  // Устанавливаем значение по умолчанию для label
+          kind: monaco.languages.CompletionItemKind[item.kind as keyof typeof monaco.languages.CompletionItemKind], // Приводим типы для kind
+          insertText: item.insertText ?? "", // Если insertText отсутствует, используем пустую строку
+          detail: item.detail ?? "", // Аналогично для detail
+          documentation: item.documentation ?? "", // Проверка на undefined
+          commitCharacters: item.commitCharacters ?? [], // Если commitCharacters отсутствуют, используем пустой массив
+          insertTextRules: item.insertTextRules ? monaco.languages.CompletionItemInsertTextRule[item.insertTextRules as keyof typeof monaco.languages.CompletionItemInsertTextRule] : undefined, // Приводим тип для insertTextRules
+          range: {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: wordUntilPosition.startColumn,
+              endColumn: wordUntilPosition.endColumn,
+          }
+      }));
+      
+      return { suggestions };
+      
+      } catch (error) {
+        // Логируем ошибки
+        console.error("Ошибка при запросе автодополнений:", error);
+        setErrors([new CompilationResult({
+          errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to fetch completions.', severity: 'Error' })],
+        })]);
+        return { suggestions: [] };
+      }
+    }
+  });
+  
+
+  useEffect(() => {
+    loadSyntaxConfig();
+  }, []);
 
   const options: monaco.editor.IStandaloneEditorConstructionOptions = {
     selectOnLineNumbers: true,
@@ -265,7 +242,9 @@ namespace Oxide.Plugins
           <h4>Compilation Errors:</h4>
           <ul>
             {errors.map((error, index) => (
-              <li key={index}>{error.message} (Line {error.startLine}, Column {error.startColumn})</li>
+              error.errors && error.errors.length > 0 ? (
+                <li key={index}>{error.errors[0].message} (Line {error.errors[0].startLine}, Column {error.errors[0].startColumn})</li>
+              ) : null
             ))}
           </ul>
         </div>

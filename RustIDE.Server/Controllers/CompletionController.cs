@@ -28,7 +28,6 @@ namespace RustIDE.Server.Controllers
 
             var document = CreateDocument(request.Code);
 
-            // Получаем сервис автодополнения
             var completionService = CompletionService.GetService(document);
             if (completionService == null)
             {
@@ -41,20 +40,24 @@ namespace RustIDE.Server.Controllers
                 return Ok(Enumerable.Empty<CompletionItem>());
             }
 
-            var result = completionList.Items.Select(item => new CompletionItem
-            {
-                Label = item.DisplayText,
-                Kind = ConvertCompletionItemKind(item.Tags),
-                InsertText = item.Properties.TryGetValue("InsertText", out var insertText) ? insertText : item.DisplayText,
-                Detail = item.InlineDescription,
-                Documentation = item.Properties.TryGetValue("Documentation", out var doc) ? doc : null,
-                CommitCharacters = item.Rules.CommitCharacterRules.IsDefaultOrEmpty
-                ? null
-                : item.Rules.CommitCharacterRules
-                    .SelectMany(rule => rule.Characters)
-                    .Select(c => c.ToString())
-                    .ToArray(),
-            }).ToArray();
+            // Фильтрация дубликатов по DisplayText
+            var result = completionList.Items
+                .GroupBy(item => item.DisplayText)
+                .Select(group => group.First())  // Оставляем только первый элемент из группы с одинаковыми DisplayText
+                .Select(item => new CompletionItem
+                {
+                    Label = item.DisplayText,
+                    Kind = ConvertCompletionItemKind(item.Tags),
+                    InsertText = item.Properties.TryGetValue("InsertText", out var insertText) ? insertText : item.DisplayText,
+                    Detail = item.InlineDescription,
+                    Documentation = item.Properties.TryGetValue("Documentation", out var doc) ? doc : null,
+                    CommitCharacters = item.Rules.CommitCharacterRules.IsDefaultOrEmpty
+                        ? null
+                        : item.Rules.CommitCharacterRules
+                            .SelectMany(rule => rule.Characters)
+                            .Select(c => c.ToString())
+                            .ToArray(),
+                }).ToArray();
 
             return result;
         }

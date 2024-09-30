@@ -150,24 +150,13 @@ namespace Oxide.Plugins
         provideCompletionItems: async (model, position, context, token) : Promise<monaco.languages.CompletionList> => {
           const wordUntilPosition = model.getWordUntilPosition(position);
           
-          // Логируем позицию, текущий код и контекст триггера
-          console.log("Запрос автодополнения. Позиция:", position);
-          console.log("Контекст триггера:", context);
-          console.log("Код на момент вызова:", model.getValue());
-      
           try {
             const request = new CompletionRequest({
               code: model.getValue(),
               position: model.getOffsetAt(position),
             });
       
-            // Логируем запрос перед отправкой
-            console.log("Отправляем запрос на сервер автодополнения:", request);
-      
             const response = await client.completion(request);
-      
-            // Логируем ответ от сервера
-            console.log("Ответ от сервера автодополнения:", response);
       
             const suggestions = response.map((item: CompletionItem) => ({
               label: item.label ?? "",  // Устанавливаем значение по умолчанию для label
@@ -188,8 +177,6 @@ namespace Oxide.Plugins
           return { suggestions };
           
           } catch (error) {
-            // Логируем ошибки
-            console.error("Ошибка при запросе автодополнений:", error);
             setErrors([new CompilationResult({
               errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to fetch completions.', severity: 'Error' })],
             })]);

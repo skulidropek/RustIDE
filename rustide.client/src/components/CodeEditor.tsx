@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
-import { Client, CodeRequest, CompilationResult, MonarchLanguage, MonarchLanguageRule, MonarchLanguageAction, ICompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../api-client';
-import { languages } from 'monaco-editor/esm/vs/editor/editor.api';
+import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../api-client';
 import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
 type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
@@ -30,7 +29,7 @@ namespace Oxide.Plugins
 
         private void OnPlayerDeath(BasePlayer player, HitInfo info)
         {
-            Puts($"{player.displayName} has been killed.");
+            Puts($"\{player.displayName} has been killed.");
         }
     }
 }`);
@@ -50,9 +49,25 @@ namespace Oxide.Plugins
       const response = await client.syntax();
       setSyntaxConfig(response);
     } catch (error) {
+      console.error('Failed to load syntax config:', error);
       setErrors([new CompilationResult({
         errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to load syntax config.', severity: 'Error' })],
       })]);
+    }
+  };
+
+  const showErrorsInEditor = (errors: CompilationError[], editor: monaco.editor.IStandaloneCodeEditor) => {
+    const model = editor.getModel();
+    if (model) {
+      const markers = errors.map(error => ({
+        startLineNumber: error.startLine || 1,
+        startColumn: error.startColumn || 1,
+        endLineNumber: error.endLine || error.startLine || 1,
+        endColumn: error.endColumn || error.startColumn || 1,
+        message: error.message || 'Unknown error',
+        severity: monaco.MarkerSeverity.Error,
+      }));
+      monaco.editor.setModelMarkers(model, 'owner', markers);
     }
   };
 
@@ -63,13 +78,29 @@ namespace Oxide.Plugins
       if (result.success) {
         setOutput(result.output ?? "");
         setErrors([]);
+        if (editorRef.current) {
+          // Передаем пустой массив, если result.errors равно undefined
+          showErrorsInEditor([], editorRef.current);
+        }
       } else {
-        setErrors(result.errors ?? []);
+        setErrors(result.errors ?? []);  // Используем пустой массив по умолчанию
+        console.error('Compilation errors:', result.errors);
+        if (editorRef.current) {
+          showErrorsInEditor(result.errors ?? [], editorRef.current);  // Исправлено
+        }
       }
     } catch (error) {
       setErrors([new CompilationResult({
-        errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to connect to the server.', severity: 'Error' })],
+        errors: [new CompilationError({ 
+          startLine: 0, 
+          startColumn: 0, 
+          endLine: 0, 
+          endColumn: 0, 
+          message: 'Failed to connect to the server.', 
+          severity: 'Error' 
+        })],
       })]);
+      console.error('Failed to connect to the server:', error);
       setOutput('');
     }
   };
@@ -78,7 +109,7 @@ namespace Oxide.Plugins
     if (syntaxConfig?.monarchLanguage && syntaxConfig?.languageConfiguration) {
       monaco.languages.register({ id: 'csharp' });
   
-      const convertTokenAction = (action: MonarchLanguageAction | string): monaco.languages.IMonarchLanguageAction => {
+      const convertTokenAction = (action: any | string): monaco.languages.IMonarchLanguageAction => {
         if (typeof action === 'string') {
           return { token: action };
         }
@@ -89,7 +120,7 @@ namespace Oxide.Plugins
         return Object.keys(result).length === 0 ? { token: 'source' } : result;
       };
   
-      const convertTokenRules = (rules: MonarchLanguageRule[]): monaco.languages.IMonarchLanguageRule[] => {
+      const convertTokenRules = (rules: any[]): monaco.languages.IMonarchLanguageRule[] => {
         return rules.map(rule => {
           const convertedRule: monaco.languages.IMonarchLanguageRule = {
             regex: rule.regex!,
@@ -107,11 +138,9 @@ namespace Oxide.Plugins
       const tokenizer: { [key: string]: monaco.languages.IMonarchLanguageRule[] } = {};
       if (syntaxConfig.monarchLanguage.tokenizer) {
         for (const [key, rules] of Object.entries(syntaxConfig.monarchLanguage.tokenizer)) {
-          tokenizer[key] = convertTokenRules(rules);
+          tokenizer[key] = convertTokenRules(rules as any);
         }
       }
-  
-      tokenizer['symbols'] = [{ regex: /[=><!~?:&|+\-*\/\^%]+/, action: { token: 'operator' } }];
   
       monaco.languages.setMonarchTokensProvider('csharp', {
         tokenizer,
@@ -159,13 +188,13 @@ namespace Oxide.Plugins
             const response = await client.completion(request);
       
             const suggestions = response.map((item: CompletionItem) => ({
-              label: item.label ?? "",  // Устанавливаем значение по умолчанию для label
-              kind: monaco.languages.CompletionItemKind[item.kind as keyof typeof monaco.languages.CompletionItemKind], // Приводим типы для kind
-              insertText: item.insertText ?? "", // Если insertText отсутствует, используем пустую строку
-              detail: item.detail ?? "", // Аналогично для detail
-              documentation: item.documentation ?? "", // Проверка на undefined
-              commitCharacters: item.commitCharacters ?? [], // Если commitCharacters отсутствуют, используем пустой массив
-              insertTextRules: item.insertTextRules ? monaco.languages.CompletionItemInsertTextRule[item.insertTextRules as keyof typeof monaco.languages.CompletionItemInsertTextRule] : undefined, // Приводим тип для insertTextRules
+              label: item.label ?? "",  
+              kind: monaco.languages.CompletionItemKind[item.kind as keyof typeof monaco.languages.CompletionItemKind],
+              insertText: item.insertText ?? "",
+              detail: item.detail ?? "",
+              documentation: item.documentation ?? "",
+              commitCharacters: item.commitCharacters ?? [],
+              insertTextRules: item.insertTextRules ? monaco.languages.CompletionItemInsertTextRule[item.insertTextRules as keyof typeof monaco.languages.CompletionItemInsertTextRule] : undefined,
               range: {
                   startLineNumber: position.lineNumber,
                   endLineNumber: position.lineNumber,

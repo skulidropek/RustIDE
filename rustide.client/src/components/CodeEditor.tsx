@@ -4,6 +4,7 @@ import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
 import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../api-client';
 import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
+import ConsoleOutput from './ConsoleOutput';
 type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
 const CodeEditor: React.FC = () => {
@@ -253,16 +254,7 @@ namespace Oxide.Plugins
       )}
 
       {errors.length > 0 && (
-        <div className="errorContainer">
-          <h4>Compilation Errors:</h4>
-          <ul>
-            {errors.map((error, index) => (
-              error.errors && error.errors.length > 0 ? (
-                <li key={index}>{error.errors[0].message} (Line {error.errors[0].startLine}, Column {error.errors[0].startColumn})</li>
-              ) : null
-            ))}
-          </ul>
-        </div>
+         <ConsoleOutput errors={errors} />
       )}
     </div>
   );

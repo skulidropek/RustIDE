@@ -1,0 +1,86 @@
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #343541;
+  color: #ececf1;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message {
+  max-width: 80%;
+  margin-bottom: 20px;
+  padding: 10px 15px;
+  border-radius: 15px;
+  line-height: 1.4;
+}
+
+.user {
+  background-color: #5c5c6f;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+
+.ai {
+  background-color: #444654;
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+.chat-input {
+  display: flex;
+  padding: 20px;
+  background-color: #40414f;
+  border-top: 1px solid #565869;
+}
+
+.chat-input input {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: #40414f;
+  color: #ececf1;
+  font-size: 16px;
+}
+
+.chat-input input::placeholder {
+  color: #8e8ea0;
+}
+
+.chat-input button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #5c5c6f;
+  color: #ececf1;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.chat-input button:hover {
+  background-color: #7b7b8f;
+}
+
+/* Добавьте эти стили в конец файла */
+
+.chat-header {
+  padding: 20px;
+  background-color: #202123;
+  border-bottom: 1px solid #565869;
+}
+
+.chat-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
-import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../api-client';
+import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../../api-client';
 import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
-import ConsoleOutput from './ConsoleOutput';
+import ConsoleOutput from '../ConsoleOutput/ConsoleOutput';
 type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
 const CodeEditor: React.FC = () => {
@@ -253,9 +253,9 @@ namespace Oxide.Plugins
         </div>
       )}
 
-      {errors.length > 0 && (
-         <ConsoleOutput errors={errors} />
-      )}
+      {/* {errors.length > 0 && (
+        //  <ConsoleOutput errors={errors} />
+      )} */}
     </div>
   );
 };

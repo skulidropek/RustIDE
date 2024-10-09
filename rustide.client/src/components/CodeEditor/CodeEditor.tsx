@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
 import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../../api-client';
 import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
-import ConsoleOutput from '../ConsoleOutput/ConsoleOutput';
-type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
 interface CodeEditorProps {
     onExecute: (result: CompilationResult) => void;
@@ -26,6 +24,7 @@ namespace Oxide.Plugins
             Puts("Example plugin has been loaded!");
         }
 
+
         [Command("example")]
         private void ExampleCommand(IPlayer player, string command, string[] args)
         {
@@ -39,60 +38,23 @@ namespace Oxide.Plugins
     }
 }`);
   
-  const [errors, setErrors] = useState<CompilationResult[]>([]);
-  const [output, setOutput] = useState<string>('');
   const [syntaxConfig, setSyntaxConfig] = useState<SyntaxConfig | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const client = new Client("https://localhost:7214");
 
-  const onChange = (newValue: string) => {
-    setCode(newValue);
-  };
-
-  const loadSyntaxConfig = async () => {
+  const checkCode = useCallback(async (codeToCheck: string) => {
     try {
-      const response = await client.syntax();
-      setSyntaxConfig(response);
-    } catch (error) {
-      console.error('Failed to load syntax config:', error);
-      setErrors([new CompilationResult({
-        errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to load syntax config.', severity: 'Error' })],
-      })]);
-    }
-  };
-
-  const showErrorsInEditor = (errors: CompilationError[], editor: monaco.editor.IStandaloneCodeEditor) => {
-    const model = editor.getModel();
-    if (model) {
-      const markers = errors.map(error => ({
-        startLineNumber: error.startLine || 1,
-        startColumn: error.startColumn || 1,
-        endLineNumber: error.endLine || error.startLine || 1,
-        endColumn: error.endColumn || error.startColumn || 1,
-        message: error.message || 'Unknown error',
-        severity: monaco.MarkerSeverity.Error,
-      }));
-      monaco.editor.setModelMarkers(model, 'owner', markers);
-    }
-  };
-
-  const checkCode = async () => {
-    try {
-      const request = new CodeRequest({ code });
+      const request = new CodeRequest({ code: codeToCheck });
       const result: CompilationResult = await client.compile(request);
-      onExecute(result);  // Отправляем результат в родительский компонент
+      onExecute(result);
       if (result.success) {
-        setOutput(result.output ?? "");
-        setErrors([]);
         if (editorRef.current) {
-          // Передаем пустой массив, если result.errors равно undefined
           showErrorsInEditor([], editorRef.current);
         }
       } else {
-        setErrors(result.errors ?? []);  // Используем пустой массив по умолчанию
         console.error('Compilation errors:', result.errors);
         if (editorRef.current) {
-          showErrorsInEditor(result.errors ?? [], editorRef.current);  // Исправлено
+          showErrorsInEditor(result.errors ?? [], editorRef.current);
         }
       }
     } catch (error) {
@@ -109,7 +71,39 @@ namespace Oxide.Plugins
       });
       onExecute(errorResult);
       console.error('Failed to connect to the server:', error);
-      setOutput('');
+    }
+  }, [onExecute]);
+
+  const onChange = useCallback((newValue: string) => {
+    setCode(newValue);
+    checkCode(newValue);
+  }, [checkCode]);
+
+  const loadSyntaxConfig = async () => {
+    try {
+      const response = await client.syntax();
+      setSyntaxConfig(response);
+    } catch (error) {
+      console.error('Failed to load syntax config:', error);
+      onExecute(new CompilationResult({
+        success: false,
+        errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to load syntax config.', severity: 'Error' })],
+      }));
+    }
+  };
+
+  const showErrorsInEditor = (errors: CompilationError[], editor: monaco.editor.IStandaloneCodeEditor) => {
+    const model = editor.getModel();
+    if (model) {
+      const markers = errors.map(error => ({
+        startLineNumber: error.startLine || 1,
+        startColumn: error.startColumn || 1,
+        endLineNumber: error.endLine || error.startLine || 1,
+        endColumn: error.endColumn || error.startColumn || 1,
+        message: error.message || 'Unknown error',
+        severity: monaco.MarkerSeverity.Error,
+      }));
+      monaco.editor.setModelMarkers(model, 'owner', markers);
     }
   };
 
@@ -184,7 +178,7 @@ namespace Oxide.Plugins
 
       monaco.languages.registerCompletionItemProvider('csharp', {
         triggerCharacters: ['.'],
-        provideCompletionItems: async (model, position, context, token) : Promise<monaco.languages.CompletionList> => {
+        provideCompletionItems: async (model, position) : Promise<monaco.languages.CompletionList> => {
           const wordUntilPosition = model.getWordUntilPosition(position);
           
           try {
@@ -214,15 +208,16 @@ namespace Oxide.Plugins
           return { suggestions };
           
           } catch (error) {
-            setErrors([new CompilationResult({
+            onExecute(new CompilationResult({
+              success: false,
               errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to fetch completions.', severity: 'Error' })],
-            })]);
+            }));
             return { suggestions: [] };
           }
         }
       });
     }
-  }, [syntaxConfig]);
+  }, [syntaxConfig, onExecute]);
 
   useEffect(() => {
     loadSyntaxConfig();
@@ -248,10 +243,11 @@ namespace Oxide.Plugins
           onChange={onChange}
           editorDidMount={(editor) => {
             editorRef.current = editor;
+            checkCode(code); // Проверяем код при первой загрузке
           }}
         />
       </div>
-      <button onClick={checkCode} className="button">Check Code</button>
+      <button onClick={() => checkCode(code)} className="button">Check Code</button>
     </div>
   );
 };

@@ -38,3 +38,24 @@
     margin-top: 10px;
   }
   
+  .code-editor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #1e1e1e;
+  }
+
+.execute-button {
+    height: 40px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.execute-button:hover {
+    background-color: #45a049;
+}

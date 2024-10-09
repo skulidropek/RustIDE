@@ -1,0 +1,42 @@
+.resizer {
+  background-color: #565869;
+  transition: background-color 0.3s;
+  position: relative;
+}
+
+.resizer.vertical {
+  width: 5px;
+  cursor: col-resize;
+}
+
+.resizer.horizontal {
+  height: 5px;
+  cursor: row-resize;
+}
+
+.resizer::after {
+  content: '';
+  position: absolute;
+  background-color: #7b7b8f;
+}
+
+.resizer.vertical::after {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 20px;
+}
+
+.resizer.horizontal::after {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 1px;
+}
+
+.resizer:hover::after,
+.resizer:active::after {
+  background-color: #9d9daf;
+}

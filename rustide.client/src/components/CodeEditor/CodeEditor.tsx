@@ -1,49 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
-import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../api-client';
+import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../../api-client';
 import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
-import ConsoleOutput from './ConsoleOutput';
-type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
-const CodeEditor: React.FC = () => {
-  const [code, setCode] = useState<string>(`using Oxide.Core.Plugins;
-using Oxide.Core.Libraries.Covalence;
+interface CodeEditorProps {
+    code: string;
+    onCodeChange: (newCode: string) => void;
+    onExecute: (result: CompilationResult) => void;
+}
 
-namespace Oxide.Plugins
-{
-    [Info("ExamplePlugin", "YourName", "1.0.0")]
-    [Description("A simple plugin for Rust.")]
-    public class ExamplePlugin : CovalencePlugin
-    {
-        private void Init()
-        {
-            Puts("Example plugin has been loaded!");
-        }
-
-        [Command("example")]
-        private void ExampleCommand(IPlayer player, string command, string[] args)
-        {
-            player.Reply("You just used the /example command!");
-        }
-
-        private void OnPlayerDeath(BasePlayer player, HitInfo info)
-        {
-            Puts($"\{player.displayName} has been killed.");
-        }
-    }
-}`);
-  
-  const [errors, setErrors] = useState<CompilationResult[]>([]);
-  const [output, setOutput] = useState<string>('');
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }) => {
   const [syntaxConfig, setSyntaxConfig] = useState<SyntaxConfig | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const client = new Client("https://localhost:7214");
 
-  const onChange = (newValue: string) => {
-    setCode(newValue);
-  };
+  const checkCode = useCallback(async (codeToCheck: string) => {
+    try {
+      const request = new CodeRequest({ code: codeToCheck });
+      const result: CompilationResult = await client.compile(request);
+      onExecute(result);
+      if (result.success) {
+        if (editorRef.current) {
+          showErrorsInEditor([], editorRef.current);
+        }
+      } else {
+        console.error('Compilation errors:', result.errors);
+        if (editorRef.current) {
+          showErrorsInEditor(result.errors ?? [], editorRef.current);
+        }
+      }
+    } catch (error) {
+      const errorResult = new CompilationResult({
+        success: false,
+        errors: [new CompilationError({ 
+          startLine: 0, 
+          startColumn: 0, 
+          endLine: 0, 
+          endColumn: 0, 
+          message: 'Failed to connect to the server.', 
+          severity: 'Error' 
+        })],
+      });
+      onExecute(errorResult);
+      console.error('Failed to connect to the server:', error);
+    }
+  }, [onExecute]);
+
+  const onChange = useCallback((newValue: string) => {
+    onCodeChange(newValue);
+    checkCode(newValue);
+  }, [onCodeChange, checkCode]);
 
   const loadSyntaxConfig = async () => {
     try {
@@ -51,9 +59,10 @@ namespace Oxide.Plugins
       setSyntaxConfig(response);
     } catch (error) {
       console.error('Failed to load syntax config:', error);
-      setErrors([new CompilationResult({
+      onExecute(new CompilationResult({
+        success: false,
         errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to load syntax config.', severity: 'Error' })],
-      })]);
+      }));
     }
   };
 
@@ -69,40 +78,6 @@ namespace Oxide.Plugins
         severity: monaco.MarkerSeverity.Error,
       }));
       monaco.editor.setModelMarkers(model, 'owner', markers);
-    }
-  };
-
-  const checkCode = async () => {
-    try {
-      const request = new CodeRequest({ code });
-      const result: CompilationResult = await client.compile(request);
-      if (result.success) {
-        setOutput(result.output ?? "");
-        setErrors([]);
-        if (editorRef.current) {
-          // Передаем пустой массив, если result.errors равно undefined
-          showErrorsInEditor([], editorRef.current);
-        }
-      } else {
-        setErrors(result.errors ?? []);  // Используем пустой массив по умолчанию
-        console.error('Compilation errors:', result.errors);
-        if (editorRef.current) {
-          showErrorsInEditor(result.errors ?? [], editorRef.current);  // Исправлено
-        }
-      }
-    } catch (error) {
-      setErrors([new CompilationResult({
-        errors: [new CompilationError({ 
-          startLine: 0, 
-          startColumn: 0, 
-          endLine: 0, 
-          endColumn: 0, 
-          message: 'Failed to connect to the server.', 
-          severity: 'Error' 
-        })],
-      })]);
-      console.error('Failed to connect to the server:', error);
-      setOutput('');
     }
   };
 
@@ -147,6 +122,15 @@ namespace Oxide.Plugins
         tokenizer,
         defaultToken: syntaxConfig.monarchLanguage.defaultToken || 'source',
         tokenPostfix: syntaxConfig.monarchLanguage.tokenPostfix || '.cs',
+        ignoreCase: syntaxConfig.monarchLanguage.ignoreCase || false,
+        unicode: syntaxConfig.monarchLanguage.unicode || false,
+        brackets: syntaxConfig.monarchLanguage.brackets?.map(bracket => ({
+          open: bracket.open || '',
+          close: bracket.close || '',
+          token: bracket.token || ''
+        })) || [],
+        start: syntaxConfig.monarchLanguage.start || 'root',
+        includeLF: syntaxConfig.monarchLanguage.includeLF || false,
       });
   
       const comments: monaco.languages.CommentRule = {
@@ -158,26 +142,45 @@ namespace Oxide.Plugins
   
       monaco.languages.setLanguageConfiguration('csharp', {
         comments: comments,
-        brackets: syntaxConfig.languageConfiguration.brackets?.map(b => [b.open!, b.close!]) || [],
-        autoClosingPairs: [
-          { open: '{', close: '}' },
-          { open: '[', close: ']' },
-          { open: '(', close: ')' },
-          { open: '"', close: '"' },
-          { open: "'", close: "'" }
-        ],
-        surroundingPairs: [
-          { open: '{', close: '}' },
-          { open: '[', close: ']' },
-          { open: '(', close: ')' },
-          { open: '"', close: '"' },
-          { open: "'", close: "'" }
-        ]
+        brackets: syntaxConfig.languageConfiguration.brackets?.map((b) => [b.open, b.close] as monaco.languages.CharacterPair) || [],
+        wordPattern: syntaxConfig.languageConfiguration.wordPattern ? new RegExp(syntaxConfig.languageConfiguration.wordPattern) : undefined,
+        indentationRules: syntaxConfig.languageConfiguration.indentationRules ? {
+          increaseIndentPattern: new RegExp(syntaxConfig.languageConfiguration.indentationRules.increaseIndentPattern || ''),
+          decreaseIndentPattern: new RegExp(syntaxConfig.languageConfiguration.indentationRules.decreaseIndentPattern || ''),
+          indentNextLinePattern: syntaxConfig.languageConfiguration.indentationRules.indentNextLinePattern ? new RegExp(syntaxConfig.languageConfiguration.indentationRules.indentNextLinePattern) : undefined,
+          unIndentedLinePattern: syntaxConfig.languageConfiguration.indentationRules.unIndentedLinePattern ? new RegExp(syntaxConfig.languageConfiguration.indentationRules.unIndentedLinePattern) : undefined,
+        } : undefined,
+        onEnterRules: syntaxConfig.languageConfiguration.onEnterRules?.map(rule => ({
+          beforeText: new RegExp(rule.beforeText || ''),
+          afterText: rule.afterText ? new RegExp(rule.afterText) : undefined,
+          action: rule.action ? {
+            indentAction: mapIndentAction(rule.action.indentAction),
+            appendText: rule.action.appendText,
+            removeText: rule.action.removeText
+          } : { indentAction: monaco.languages.IndentAction.None }
+        })),
+        autoClosingPairs: syntaxConfig.languageConfiguration.autoClosingPairs?.map(pair => ({
+          open: pair.open || '',
+          close: pair.close || '',
+          notIn: pair.notIn,
+        })),
+        surroundingPairs: syntaxConfig.languageConfiguration.surroundingPairs?.map(pair => ({
+          open: pair.open || '',
+          close: pair.close || '',
+        })),
+        folding: syntaxConfig.languageConfiguration.folding ? {
+          markers: syntaxConfig.languageConfiguration.folding.markers ? {
+            start: new RegExp(syntaxConfig.languageConfiguration.folding.markers.start || ''),
+            end: new RegExp(syntaxConfig.languageConfiguration.folding.markers.end || '')
+          } : undefined,
+          offSide: syntaxConfig.languageConfiguration.folding.offSide
+        } : undefined,
+        autoCloseBefore: syntaxConfig.languageConfiguration.autoCloseBefore || ")}]',;"
       });
 
       monaco.languages.registerCompletionItemProvider('csharp', {
         triggerCharacters: ['.'],
-        provideCompletionItems: async (model, position, context, token) : Promise<monaco.languages.CompletionList> => {
+        provideCompletionItems: async (model, position) : Promise<monaco.languages.CompletionList> => {
           const wordUntilPosition = model.getWordUntilPosition(position);
           
           try {
@@ -207,15 +210,16 @@ namespace Oxide.Plugins
           return { suggestions };
           
           } catch (error) {
-            setErrors([new CompilationResult({
+            onExecute(new CompilationResult({
+              success: false,
               errors: [new CompilationError({ startLine: 0, startColumn: 0, endLine: 0, endColumn: 0, message: 'Failed to fetch completions.', severity: 'Error' })],
-            })]);
+            }));
             return { suggestions: [] };
           }
         }
       });
     }
-  }, [syntaxConfig]);
+  }, [syntaxConfig, onExecute]);
 
   useEffect(() => {
     loadSyntaxConfig();
@@ -230,6 +234,20 @@ namespace Oxide.Plugins
     wordWrap: 'on',
   };
 
+  const mapIndentAction = (action: string | undefined): monaco.languages.IndentAction => {
+    switch (action) {
+      case 'indent':
+        return monaco.languages.IndentAction.Indent;
+      case 'indentOutdent':
+        return monaco.languages.IndentAction.IndentOutdent;
+      case 'outdent':
+        return monaco.languages.IndentAction.Outdent;
+      case 'none':
+      default:
+        return monaco.languages.IndentAction.None;
+    }
+  };
+
   return (
     <div className="container">
       <div className="editorContainer">
@@ -241,21 +259,11 @@ namespace Oxide.Plugins
           onChange={onChange}
           editorDidMount={(editor) => {
             editorRef.current = editor;
+            checkCode(code);
           }}
         />
       </div>
-      <button onClick={checkCode} className="button">Check Code</button>
-
-      {output && (
-        <div className="outputContainer">
-          <h4>Program Output:</h4>
-          <pre>{output}</pre>
-        </div>
-      )}
-
-      {errors.length > 0 && (
-         <ConsoleOutput errors={errors} />
-      )}
+      <button onClick={() => checkCode(code)} className="button">Check Code</button>
     </div>
   );
 };

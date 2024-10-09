@@ -18,7 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // Register services
 builder.Services.AddScoped<CodeExecutorService>();
-builder.Services.AddScoped<HooksService>();
+builder.Services.AddSingleton<HooksService>();
 
 var app = builder.Build();
 

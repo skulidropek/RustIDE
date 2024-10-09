@@ -100,10 +100,10 @@ namespace RustIDE.Server.Models
         [JsonPropertyName("comments")]
         public CommentRule Comments { get; set; }
 
-       /        [JsonPropertyName("brackets")]
+        [JsonPropertyName("brackets")]
         public CharacterPair[] Brackets { get; set; }
 
-       /        [JsonPropertyName("wordPattern")]
+        [JsonPropertyName("wordPattern")]
         public string WordPattern { get; set; }
         [JsonPropertyName("indentationRules")]
         public IndentationRule IndentationRules { get; set; }

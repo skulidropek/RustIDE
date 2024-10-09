@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import './ChatWindow.css';
 
-const ChatWindow: React.FC = () => {
+interface ChatWindowProps {
+  code: string;
+}
+
+const ChatWindow: React.FC<ChatWindowProps> = ({ code }) => {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
   const [inputMessage, setInputMessage] = useState('');
 
@@ -9,7 +13,6 @@ const ChatWindow: React.FC = () => {
     if (inputMessage.trim() !== '') {
       setMessages([...messages, { text: inputMessage, isUser: true }]);
       setInputMessage('');
-      // Здесь вы можете добавить логику для отправки сообщения ИИ и получения ответа
     }
   };
 
@@ -37,7 +40,7 @@ const ChatWindow: React.FC = () => {
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Напишите сообщение..."
+          placeholder="Введите сообщение..."
         />
         <button onClick={handleSendMessage}>Отправить</button>
       </div>

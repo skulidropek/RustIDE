@@ -6,38 +6,12 @@ import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig,
 import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
 
 interface CodeEditorProps {
+    code: string;
+    onCodeChange: (newCode: string) => void;
     onExecute: (result: CompilationResult) => void;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ onExecute }) => {
-  const [code, setCode] = useState<string>(`using Oxide.Core.Plugins;
-using Oxide.Core.Libraries.Covalence;
-
-namespace Oxide.Plugins
-{
-    [Info("ExamplePlugin", "YourName", "1.0.0")]
-    [Description("A simple plugin for Rust.")]
-    public class ExamplePlugin : CovalencePlugin
-    {
-        private void Init()
-        {
-            Puts("Example plugin has been loaded!");
-        }
-
-
-        [Command("example")]
-        private void ExampleCommand(IPlayer player, string command, string[] args)
-        {
-            player.Reply("You just used the /example command!");
-        }
-
-        private void OnPlayerDeath(BasePlayer player, HitInfo info)
-        {
-            Puts($"\{player.displayName} has been killed.");
-        }
-    }
-}`);
-  
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }) => {
   const [syntaxConfig, setSyntaxConfig] = useState<SyntaxConfig | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const client = new Client("https://localhost:7214");
@@ -75,9 +49,9 @@ namespace Oxide.Plugins
   }, [onExecute]);
 
   const onChange = useCallback((newValue: string) => {
-    setCode(newValue);
+    onCodeChange(newValue);
     checkCode(newValue);
-  }, [checkCode]);
+  }, [onCodeChange, checkCode]);
 
   const loadSyntaxConfig = async () => {
     try {
@@ -159,7 +133,7 @@ namespace Oxide.Plugins
   
       monaco.languages.setLanguageConfiguration('csharp', {
         comments: comments,
-        brackets: syntaxConfig.languageConfiguration.brackets?.map(b => [b.open!, b.close!]) || [],
+        brackets: syntaxConfig.languageConfiguration.brackets?.map((b) => [b.open, b.close] as monaco.languages.CharacterPair) || [],
         autoClosingPairs: [
           { open: '{', close: '}' },
           { open: '[', close: ']' },

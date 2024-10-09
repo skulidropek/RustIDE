@@ -10,6 +10,32 @@ const App: React.FC = () => {
     const [chatWidth, setChatWidth] = useState(400);
     const [consoleHeight, setConsoleHeight] = useState(200);
     const [consoleOutput, setConsoleOutput] = useState<CompilationResult[]>([]);
+    const [code, setCode] = useState<string>(`using Oxide.Core.Plugins;
+using Oxide.Core.Libraries.Covalence;
+
+namespace Oxide.Plugins
+{
+    [Info("ExamplePlugin", "YourName", "1.0.0")]
+    [Description("A simple plugin for Rust.")]
+    public class ExamplePlugin : CovalencePlugin
+    {
+        private void Init()
+        {
+            Puts("Example plugin has been loaded!");
+        }
+
+        [Command("example")]
+        private void ExampleCommand(IPlayer player, string command, string[] args)
+        {
+            player.Reply("You just used the /example command!");
+        }
+
+        private void OnPlayerDeath(BasePlayer player, HitInfo info)
+        {
+            Puts($"{player.displayName} has been killed.");
+        }
+    }
+}`);
 
     const handleHorizontalResize = useCallback((deltaX: number) => {
         setChatWidth(prevWidth => {
@@ -32,15 +58,23 @@ const App: React.FC = () => {
         setConsoleOutput([result]);
     }, []);
 
+    const handleCodeChange = useCallback((newCode: string) => {
+        setCode(newCode);
+    }, []);
+
     return (
         <div className="app-container">
             <div className="chat-container" style={{ width: chatWidth }}>
-                <ChatWindow />
+                <ChatWindow code={code} />
             </div>
             <Resizer onResize={handleHorizontalResize} orientation="vertical" />
             <div className="right-panel" style={{ width: `calc(100% - ${chatWidth}px)` }}>
                 <div className="editor-container" style={{ height: `calc(100% - ${consoleHeight}px)` }}>
-                    <CodeEditor onExecute={handleCodeExecution} />
+                    <CodeEditor 
+                        code={code} 
+                        onCodeChange={handleCodeChange} 
+                        onExecute={handleCodeExecution} 
+                    />
                 </div>
                 <Resizer onResize={handleVerticalResize} orientation="horizontal" />
                 <div className="console-container" style={{ height: consoleHeight }}>

@@ -8,11 +8,13 @@ interface ResizerProps {
 
 const Resizer: React.FC<ResizerProps> = ({ onResize, orientation }) => {
   const [isResizing, setIsResizing] = useState(false);
+  const [startPosition, setStartPosition] = useState(0);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
-  }, []);
+    setStartPosition(orientation === 'vertical' ? e.clientX : e.clientY);
+  }, [orientation]);
 
   const stopResizing = useCallback(() => {
     setIsResizing(false);
@@ -21,10 +23,18 @@ const Resizer: React.FC<ResizerProps> = ({ onResize, orientation }) => {
   const resize = useCallback(
     (e: MouseEvent) => {
       if (isResizing) {
-        onResize(orientation === 'vertical' ? e.clientX : e.clientY);
+        const currentPosition = orientation === 'vertical' ? e.clientX : e.clientY;
+        const difference = currentPosition - startPosition;
+        
+        if (orientation === 'horizontal') {
+          // Инвертируем значение для горизонтального ресайзера
+          onResize(-difference);
+        } else {
+          onResize(difference);
+        }
       }
     },
-    [isResizing, onResize, orientation]
+    [isResizing, onResize, orientation, startPosition]
   );
 
   useEffect(() => {

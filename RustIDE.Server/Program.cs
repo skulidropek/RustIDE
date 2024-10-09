@@ -20,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // Register services
 builder.Services.AddScoped<CodeExecutorService>();
+builder.Services.AddSingleton<AIInteractionService>();
 builder.Services.AddSingleton<HooksService>();
 
 // Добавьте эту строку для подключения к PostgreSQL

@@ -134,20 +134,39 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }
       monaco.languages.setLanguageConfiguration('csharp', {
         comments: comments,
         brackets: syntaxConfig.languageConfiguration.brackets?.map((b) => [b.open, b.close] as monaco.languages.CharacterPair) || [],
-        autoClosingPairs: [
-          { open: '{', close: '}' },
-          { open: '[', close: ']' },
-          { open: '(', close: ')' },
-          { open: '"', close: '"' },
-          { open: "'", close: "'" }
-        ],
-        surroundingPairs: [
-          { open: '{', close: '}' },
-          { open: '[', close: ']' },
-          { open: '(', close: ')' },
-          { open: '"', close: '"' },
-          { open: "'", close: "'" }
-        ]
+        wordPattern: syntaxConfig.languageConfiguration.wordPattern ? new RegExp(syntaxConfig.languageConfiguration.wordPattern) : undefined,
+        indentationRules: syntaxConfig.languageConfiguration.indentationRules ? {
+          increaseIndentPattern: new RegExp(syntaxConfig.languageConfiguration.indentationRules.increaseIndentPattern || ''),
+          decreaseIndentPattern: new RegExp(syntaxConfig.languageConfiguration.indentationRules.decreaseIndentPattern || ''),
+          indentNextLinePattern: syntaxConfig.languageConfiguration.indentationRules.indentNextLinePattern ? new RegExp(syntaxConfig.languageConfiguration.indentationRules.indentNextLinePattern) : undefined,
+          unIndentedLinePattern: syntaxConfig.languageConfiguration.indentationRules.unIndentedLinePattern ? new RegExp(syntaxConfig.languageConfiguration.indentationRules.unIndentedLinePattern) : undefined,
+        } : undefined,
+        onEnterRules: syntaxConfig.languageConfiguration.onEnterRules?.map(rule => ({
+          beforeText: new RegExp(rule.beforeText || ''),
+          afterText: rule.afterText ? new RegExp(rule.afterText) : undefined,
+          action: rule.action ? {
+            indentAction: mapIndentAction(rule.action.indentAction),
+            appendText: rule.action.appendText,
+            removeText: rule.action.removeText
+          } : { indentAction: monaco.languages.IndentAction.None }
+        })),
+        autoClosingPairs: syntaxConfig.languageConfiguration.autoClosingPairs?.map(pair => ({
+          open: pair.open || '',
+          close: pair.close || '',
+          notIn: pair.notIn,
+        })),
+        surroundingPairs: syntaxConfig.languageConfiguration.surroundingPairs?.map(pair => ({
+          open: pair.open || '',
+          close: pair.close || '',
+        })),
+        folding: syntaxConfig.languageConfiguration.folding ? {
+          markers: syntaxConfig.languageConfiguration.folding.markers ? {
+            start: new RegExp(syntaxConfig.languageConfiguration.folding.markers.start || ''),
+            end: new RegExp(syntaxConfig.languageConfiguration.folding.markers.end || '')
+          } : undefined,
+          offSide: syntaxConfig.languageConfiguration.folding.offSide
+        } : undefined,
+        autoCloseBefore: syntaxConfig.languageConfiguration.autoCloseBefore || ")}]',;"
       });
 
       monaco.languages.registerCompletionItemProvider('csharp', {
@@ -204,6 +223,20 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }
     scrollBeyondLastLine: false,
     fontSize: 14,
     wordWrap: 'on',
+  };
+
+  const mapIndentAction = (action: string | undefined): monaco.languages.IndentAction => {
+    switch (action) {
+      case 'indent':
+        return monaco.languages.IndentAction.Indent;
+      case 'indentOutdent':
+        return monaco.languages.IndentAction.IndentOutdent;
+      case 'outdent':
+        return monaco.languages.IndentAction.Outdent;
+      case 'none':
+      default:
+        return monaco.languages.IndentAction.None;
+    }
   };
 
   return (

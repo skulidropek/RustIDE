@@ -216,6 +216,22 @@ namespace RustIDE.Server.Controllers
                         new CharacterPair { Open = "{", Close = "}" },
                         new CharacterPair { Open = "[", Close = "]" },
                         new CharacterPair { Open = "(", Close = ")" }
+                    },
+                    AutoClosingPairs = new[]
+                    {
+                        new AutoClosingPairConditional { Open = "{", Close = "}", NotIn = new List<string>() },
+                        new AutoClosingPairConditional { Open = "[", Close = "]", NotIn = new List<string>() },
+                        new AutoClosingPairConditional { Open = "(", Close = ")", NotIn = new List<string>() },
+                        new AutoClosingPairConditional { Open = "\"", Close = "\"", NotIn = new List<string>() },
+                        new AutoClosingPairConditional { Open = "'", Close = "'", NotIn = new List<string>() }
+                    },
+                    SurroundingPairs = new[]
+                    {
+                        new AutoClosingPair { Open = "{", Close = "}" },
+                        new AutoClosingPair { Open = "[", Close = "]" },
+                        new AutoClosingPair { Open = "(", Close = ")" },
+                        new AutoClosingPair { Open = "\"", Close = "\"" },
+                        new AutoClosingPair { Open = "'", Close = "'" }
                     }
                 }
             };

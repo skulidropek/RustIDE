@@ -122,6 +122,15 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }
         tokenizer,
         defaultToken: syntaxConfig.monarchLanguage.defaultToken || 'source',
         tokenPostfix: syntaxConfig.monarchLanguage.tokenPostfix || '.cs',
+        ignoreCase: syntaxConfig.monarchLanguage.ignoreCase || false,
+        unicode: syntaxConfig.monarchLanguage.unicode || false,
+        brackets: syntaxConfig.monarchLanguage.brackets?.map(bracket => ({
+          open: bracket.open || '',
+          close: bracket.close || '',
+          token: bracket.token || ''
+        })) || [],
+        start: syntaxConfig.monarchLanguage.start || 'root',
+        includeLF: syntaxConfig.monarchLanguage.includeLF || false,
       });
   
       const comments: monaco.languages.CommentRule = {

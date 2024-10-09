@@ -245,17 +245,6 @@ namespace Oxide.Plugins
         />
       </div>
       <button onClick={checkCode} className="button">Check Code</button>
-
-      {output && (
-        <div className="outputContainer">
-          <h4>Program Output:</h4>
-          <pre>{output}</pre>
-        </div>
-      )}
-
-      {/* {errors.length > 0 && (
-        //  <ConsoleOutput errors={errors} />
-      )} */}
     </div>
   );
 };

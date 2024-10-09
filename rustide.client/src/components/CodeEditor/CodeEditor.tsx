@@ -7,7 +7,11 @@ import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/e
 import ConsoleOutput from '../ConsoleOutput/ConsoleOutput';
 type IMonarchLanguage = monacoLanguages.IMonarchLanguage;
 
-const CodeEditor: React.FC = () => {
+interface CodeEditorProps {
+    onExecute: (result: CompilationResult) => void;
+}
+
+const CodeEditor: React.FC<CodeEditorProps> = ({ onExecute }) => {
   const [code, setCode] = useState<string>(`using Oxide.Core.Plugins;
 using Oxide.Core.Libraries.Covalence;
 
@@ -76,6 +80,7 @@ namespace Oxide.Plugins
     try {
       const request = new CodeRequest({ code });
       const result: CompilationResult = await client.compile(request);
+      onExecute(result);  // Отправляем результат в родительский компонент
       if (result.success) {
         setOutput(result.output ?? "");
         setErrors([]);
@@ -91,7 +96,8 @@ namespace Oxide.Plugins
         }
       }
     } catch (error) {
-      setErrors([new CompilationResult({
+      const errorResult = new CompilationResult({
+        success: false,
         errors: [new CompilationError({ 
           startLine: 0, 
           startColumn: 0, 
@@ -100,7 +106,8 @@ namespace Oxide.Plugins
           message: 'Failed to connect to the server.', 
           severity: 'Error' 
         })],
-      })]);
+      });
+      onExecute(errorResult);
       console.error('Failed to connect to the server:', error);
       setOutput('');
     }

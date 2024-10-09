@@ -1,14 +1,15 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import './App.css';
 import CodeEditor from './components/CodeEditor/CodeEditor';
 import ChatWindow from './components/ChatWindow/ChatWindow';
 import ConsoleOutput from './components/ConsoleOutput/ConsoleOutput';
 import Resizer from './components/Resizer/Resizer';
+import { CompilationResult } from './api-client'; // Убедитесь, что путь к api-client правильный
 
 const App: React.FC = () => {
     const [chatWidth, setChatWidth] = useState(400);
     const [consoleHeight, setConsoleHeight] = useState(200);
-    const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
+    const [consoleOutput, setConsoleOutput] = useState<CompilationResult[]>([]);
 
     const handleHorizontalResize = useCallback((deltaX: number) => {
         setChatWidth(prevWidth => {
@@ -27,8 +28,8 @@ const App: React.FC = () => {
         });
     }, []);
 
-    const handleCodeExecution = useCallback((output: string) => {
-        setConsoleOutput(prev => [...prev, output]);
+    const handleCodeExecution = useCallback((result: CompilationResult) => {
+        setConsoleOutput(prev => [...prev, result]);
     }, []);
 
     return (
@@ -39,11 +40,11 @@ const App: React.FC = () => {
             <Resizer onResize={handleHorizontalResize} orientation="vertical" />
             <div className="right-panel" style={{ width: `calc(100% - ${chatWidth}px)` }}>
                 <div className="editor-container" style={{ height: `calc(100% - ${consoleHeight}px)` }}>
-                    <CodeEditor />
+                    <CodeEditor onExecute={handleCodeExecution} />
                 </div>
                 <Resizer onResize={handleVerticalResize} orientation="horizontal" />
                 <div className="console-container" style={{ height: consoleHeight }}>
-                    <ConsoleOutput output={consoleOutput} />
+                    <ConsoleOutput results={consoleOutput} />
                 </div>
             </div>
         </div>

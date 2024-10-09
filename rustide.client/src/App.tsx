@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import './App.css';
 import CodeEditor from './components/CodeEditor/CodeEditor';
 import ChatWindow from './components/ChatWindow/ChatWindow';
@@ -10,12 +10,21 @@ const App: React.FC = () => {
     const [consoleHeight, setConsoleHeight] = useState(200);
     const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
 
-    const handleHorizontalResize = useCallback((newSize: number) => {
-        setChatWidth(Math.max(200, Math.min(newSize, window.innerWidth - 205)));
+    const handleHorizontalResize = useCallback((deltaX: number) => {
+        setChatWidth(prevWidth => {
+            const minChatWidth = 400;
+            const minRightPanelWidth = 400;
+            const maxChatWidth = window.innerWidth - minRightPanelWidth;
+            return Math.max(minChatWidth, Math.min(prevWidth + deltaX, maxChatWidth));
+        });
     }, []);
 
-    const handleVerticalResize = useCallback((newSize: number) => {
-        setConsoleHeight(Math.max(100, Math.min(newSize, window.innerHeight - 100)));
+    const handleVerticalResize = useCallback((deltaY: number) => {
+        setConsoleHeight(prevHeight => {
+            const minConsoleHeight = 100;
+            const maxConsoleHeight = window.innerHeight - 100;
+            return Math.max(minConsoleHeight, Math.min(prevHeight + deltaY, maxConsoleHeight));
+        });
     }, []);
 
     const handleCodeExecution = useCallback((output: string) => {
@@ -28,7 +37,7 @@ const App: React.FC = () => {
                 <ChatWindow />
             </div>
             <Resizer onResize={handleHorizontalResize} orientation="vertical" />
-            <div className="right-panel">
+            <div className="right-panel" style={{ width: `calc(100% - ${chatWidth}px)` }}>
                 <div className="editor-container" style={{ height: `calc(100% - ${consoleHeight}px)` }}>
                     <CodeEditor />
                 </div>

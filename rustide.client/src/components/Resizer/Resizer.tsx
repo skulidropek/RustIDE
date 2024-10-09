@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import './Resizer.css';
 
 interface ResizerProps {
-  onResize: (newSize: number) => void;
+  onResize: (delta: number) => void;
   orientation: 'horizontal' | 'vertical';
 }
 
@@ -24,14 +24,15 @@ const Resizer: React.FC<ResizerProps> = ({ onResize, orientation }) => {
     (e: MouseEvent) => {
       if (isResizing) {
         const currentPosition = orientation === 'vertical' ? e.clientX : e.clientY;
-        const difference = currentPosition - startPosition;
+        const delta = currentPosition - startPosition;
         
         if (orientation === 'horizontal') {
-          // Инвертируем значение для горизонтального ресайзера
-          onResize(-difference);
+          onResize(-delta);
         } else {
-          onResize(difference);
+          onResize(delta);
         }
+        
+        setStartPosition(currentPosition);
       }
     },
     [isResizing, onResize, orientation, startPosition]

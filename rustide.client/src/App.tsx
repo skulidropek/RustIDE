@@ -29,7 +29,7 @@ const App: React.FC = () => {
     }, []);
 
     const handleCodeExecution = useCallback((result: CompilationResult) => {
-        setConsoleOutput(prev => [...prev, result]);
+        setConsoleOutput([result]);
     }, []);
 
     return (

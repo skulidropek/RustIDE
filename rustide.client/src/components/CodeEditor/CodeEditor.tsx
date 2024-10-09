@@ -243,7 +243,7 @@ namespace Oxide.Plugins
           onChange={onChange}
           editorDidMount={(editor) => {
             editorRef.current = editor;
-            checkCode(code); // Проверяем код при первой загрузке
+            checkCode(code);
           }}
         />
       </div>

@@ -98,7 +98,7 @@ namespace RustIDE.Server.Controllers
 
         private IEnumerable<MetadataReference> GetMetadataReferences()
         {
-            var directoryPath = @"C:\RustServer 2.0\rustserver\RustDedicated_Data\Managed";
+            var directoryPath = Path.Combine(AppContext.BaseDirectory, "Managed");
 
             var references = Directory.GetFiles(directoryPath)
                                       .Where(file => file.EndsWith(".dll"))

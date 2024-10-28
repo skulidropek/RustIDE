@@ -1,6 +1,9 @@
 # Stage 1: Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+
+RUN apt-get update && apt-get install -y nodejs npm
+
 COPY ["RustIDE.Server/RustIDE.Server.csproj", "RustIDE.Server/"]
 RUN dotnet restore "./RustIDE.Server/RustIDE.Server.csproj"
 

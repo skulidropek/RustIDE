@@ -1,7 +1,8 @@
 [build]
+builder = "docker"
 dockerfile = "./RustIDE.Server/Dockerfile"
 
 [deploy]
-command = "dotnet RustIDE.Server.dll"
-restart = "always"
-healthcheck = "/health"
+startCommand = "dotnet RustIDE.Server.dll"
+restartPolicyType = "always"
+healthCheckPath = "/health"

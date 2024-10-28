@@ -1,0 +1,11 @@
+{
+    "phases": {
+      "setup": {
+        "nixpkgs": ["dotnet-sdk"]
+      },
+      "install": "dotnet restore",
+      "build": "dotnet publish --no-restore -c Release -o out",
+      "start": "./out/RustIDE.Server.dll"
+    }
+  }
+  

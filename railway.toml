@@ -1,8 +1,10 @@
 [build]
-builder = "docker"
-dockerfile = "./RustIDE.Server/Dockerfile"
+  builder = "DOCKERFILE"
+  dockerfilePath = "./RustIDE.Server/Dockerfile"
 
 [deploy]
-startCommand = "dotnet RustIDE.Server.dll"
-restartPolicyType = "always"
-healthCheckPath = "/health"
+  startCommand = "dotnet RustIDE.Server.dll" # команда для запуска, если требуется
+  numReplicas = 1
+  region = "us-west1" # укажите регион, если необходимо
+  restartPolicyType = "ALWAYS"  # Политика перезапуска
+  healthcheckPath = "/health"  # Путь для проверки состояния

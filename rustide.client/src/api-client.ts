@@ -22,6 +22,45 @@ export class Client {
      * @param body (optional) 
      * @return Success
      */
+    aI(body: UserMessageRequest | undefined): Promise<string> {
+        let url_ = this.baseUrl + "/api/AI";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAI(_response);
+        });
+    }
+
+    protected processAI(response: Response): Promise<string> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+                return _responseText;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<string>("" as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
     compile(body: CodeRequest | undefined): Promise<CompilationResult> {
         let url_ = this.baseUrl + "/api/code/compile";
         url_ = url_.replace(/[?&]$/, "");
@@ -1293,6 +1332,42 @@ export class SyntaxConfig implements ISyntaxConfig {
 export interface ISyntaxConfig {
     monarchLanguage?: MonarchLanguage;
     languageConfiguration?: LanguageConfiguration;
+}
+
+export class UserMessageRequest implements IUserMessageRequest {
+    message?: string | undefined;
+
+    constructor(data?: IUserMessageRequest) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.message = _data["message"];
+        }
+    }
+
+    static fromJS(data: any): UserMessageRequest {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserMessageRequest();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["message"] = this.message;
+        return data;
+    }
+}
+
+export interface IUserMessageRequest {
+    message?: string | undefined;
 }
 
 export class ApiException extends Error {

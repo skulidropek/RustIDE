@@ -3,7 +3,6 @@ import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
 import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../../api-client';
-import type { languages as monacoLanguages } from 'monaco-editor/esm/vs/editor/editor.api';
 
 interface CodeEditorProps {
     code: string;
@@ -216,6 +215,39 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }
             }));
             return { suggestions: [] };
           }
+        }
+      });
+
+      monaco.languages.registerCodeActionProvider('csharp', {
+        provideCodeActions: function(model: monaco.editor.ITextModel, range: monaco.Range, _context: monaco.languages.CodeActionContext, _token: monaco.CancellationToken): monaco.languages.ProviderResult<monaco.languages.CodeActionList> {
+            const actions: monaco.languages.CodeAction[] = [{
+                title: "Добавить недостающую закрывающую скобку",
+                diagnostics: [{
+                    startLineNumber: range.startLineNumber,
+                    startColumn: range.startColumn,
+                    endLineNumber: range.endLineNumber,
+                    endColumn: range.endColumn,
+                    message: 'Недопустимый термин ")" в выражении',
+                    severity: monaco.MarkerSeverity.Error
+                }],
+                kind: "quickfix",
+                edit: {
+                    edits: [{
+                        resource: model.uri,
+                        textEdit: {
+                            range: new monaco.Range(range.startLineNumber, range.startColumn, range.endLineNumber, range.endColumn),
+                            text: ')'
+                        },
+                        versionId: model.getVersionId()
+                    }]
+                },
+                isPreferred: true
+            }];
+
+            return {
+                actions: actions,
+                dispose: () => {}
+            };
         }
       });
     }

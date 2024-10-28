@@ -64,9 +64,9 @@ namespace Oxide.Plugins
 
     return (
         <div className="app-container">
-            <div className="chat-container" style={{ width: chatWidth }}>
+            {/* <div className="chat-container" style={{ width: chatWidth }}>
                 <ChatWindow code={code} />
-            </div>
+            </div> */}
             <Resizer onResize={handleHorizontalResize} orientation="vertical" />
             <div className="right-panel" style={{ width: `calc(100% - ${chatWidth}px)` }}>
                 <div className="editor-container" style={{ height: `calc(100% - ${consoleHeight}px)` }}>

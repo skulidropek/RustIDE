@@ -6,7 +6,7 @@ interface ChatWindowProps {
   code: string;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ code }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ }) => {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [client] = useState(new Client("https://rustide-production.up.railway.app"));

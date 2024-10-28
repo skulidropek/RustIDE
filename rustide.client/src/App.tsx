@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import './App.css';
 import CodeEditor from './components/CodeEditor/CodeEditor';
-import ChatWindow from './components/ChatWindow/ChatWindow';
+// import ChatWindow from './components/ChatWindow/ChatWindow';
 import ConsoleOutput from './components/ConsoleOutput/ConsoleOutput';
 import Resizer from './components/Resizer/Resizer';
 import { CompilationResult } from './api-client'; // Убедитесь, что путь к api-client правильный

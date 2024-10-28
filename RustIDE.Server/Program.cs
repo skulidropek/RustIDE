@@ -18,6 +18,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 // Register services
 builder.Services.AddScoped<CodeExecutorService>();
 builder.Services.AddSingleton<AIInteractionService>();
@@ -26,6 +27,13 @@ builder.Services.AddSingleton<HooksService>();
 // Добавьте эту строку для подключения к PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Добавление Health Checks
+builder.Services.AddHealthChecks();
+
+// Установка порта из переменной окружения или использование порта по умолчанию (8080)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
 
 var app = builder.Build();
 
@@ -48,6 +56,9 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Настройка пути для Health Checks
+app.UseHealthChecks("/health");
 
 // Fallback to serve SPA (React, etc.)
 app.MapFallbackToFile("/index.html");

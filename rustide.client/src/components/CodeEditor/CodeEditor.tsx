@@ -13,7 +13,7 @@ interface CodeEditorProps {
 const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }) => {
   const [syntaxConfig, setSyntaxConfig] = useState<SyntaxConfig | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const client = new Client("https://localhost:7214");
+  const client = new Client("https://rustide-production.up.railway.app");
 
   const checkCode = useCallback(async (codeToCheck: string) => {
     try {

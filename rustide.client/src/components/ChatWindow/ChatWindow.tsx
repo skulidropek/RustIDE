@@ -9,7 +9,7 @@ interface ChatWindowProps {
 const ChatWindow: React.FC<ChatWindowProps> = ({ code }) => {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [client] = useState(new Client("https://localhost:7214"));
+  const [client] = useState(new Client("https://rustide-production.up.railway.app"));
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = async () => {

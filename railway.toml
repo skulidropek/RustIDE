@@ -1,5 +1,4 @@
 [build]
-builder = "docker"
 dockerfile = "./RustIDE.Server/Dockerfile"
 
 [deploy]

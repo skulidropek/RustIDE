@@ -11,7 +11,7 @@ namespace RustIDE.Server.Services
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(code);
 
-            var references = Directory.GetFiles("C:\\RustServer 2.0\\rustserver\\RustDedicated_Data\\Managed")
+            var references = Directory.GetFiles("Managed")
                                        .Where(s => s.EndsWith(".dll"))
                                        .Where(f => !f.Contains("Newtonsoft.Json.dll"))
                                        .Select(path => MetadataReference.CreateFromFile(path.Trim()))

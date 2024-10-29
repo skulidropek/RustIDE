@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ChatWindow.css';
 import { Client, UserMessageRequest } from '../../api-client';
-
+import config from '../../config';
 interface ChatWindowProps {
   code: string;
 }
@@ -9,7 +9,7 @@ interface ChatWindowProps {
 const ChatWindow: React.FC<ChatWindowProps> = ({ }) => {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [client] = useState(new Client("https://rustide-production.up.railway.app"));
+  const [client] = useState(new Client(config.apiUrl));
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = async () => {

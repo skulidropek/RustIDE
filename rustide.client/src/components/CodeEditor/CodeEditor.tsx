@@ -3,6 +3,7 @@ import MonacoEditor from 'react-monaco-editor';
 import * as monaco from 'monaco-editor';
 import './CodeEditor.css';
 import { Client, CodeRequest, CompilationResult, CompilationError, SyntaxConfig, CompletionRequest, CompletionItem } from '../../api-client';
+import config from '../../config';
 
 interface CodeEditorProps {
     code: string;
@@ -13,7 +14,7 @@ interface CodeEditorProps {
 const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange, onExecute }) => {
   const [syntaxConfig, setSyntaxConfig] = useState<SyntaxConfig | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const client = new Client("https://rustide-production.up.railway.app");
+  const client = new Client(config.apiUrl);
 
   const checkCode = useCallback(async (codeToCheck: string) => {
     try {

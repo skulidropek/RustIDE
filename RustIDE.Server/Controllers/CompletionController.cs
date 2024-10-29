@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Library;
+using Library.Models;
+using Microsoft.AspNetCore.Mvc;
 using RustIDE.Server.Models;
 using RustIDE.Server.Services;
 using System.Collections.Generic;
@@ -27,6 +29,21 @@ namespace RustIDE.Server.Controllers
 
             var completions = await _completionService.GetCompletionsAsync(request.Code, request.Position);
             return Ok(completions);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<AssemblyModel>>> GetAssemblys()
+        {
+            var directoryPath = Path.Combine(AppContext.BaseDirectory, "Managed");
+
+            List<AssemblyModel> assemblies = new List<AssemblyModel>();
+
+            foreach (var file in Directory.GetFiles(directoryPath))
+            {
+                assemblies.Add(AssemblyDataSerializer.ConvertToModel(directoryPath));
+            }
+
+            return assemblies;
         }
     }
 }

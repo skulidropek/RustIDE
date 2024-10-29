@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using RustIDE.Server.Models;
 using RustIDE.Server.Services;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace RustIDE.Server.Controllers
@@ -40,7 +41,7 @@ namespace RustIDE.Server.Controllers
 
             foreach (var file in Directory.GetFiles(directoryPath))
             {
-                assemblies.Add(AssemblyDataSerializer.ConvertToModel(directoryPath));
+                assemblies.Add(AssemblyDataSerializer.ConvertToModel(file));
             }
 
             return assemblies;

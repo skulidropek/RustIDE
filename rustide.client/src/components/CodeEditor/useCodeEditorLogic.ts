@@ -19,7 +19,7 @@ export const useCodeEditorLogic = (onCodeChange: (newCode: string) => void, onEx
           showErrorsInEditor([], editorRef.current);
         }
       } else {
-        console.error('Compilation errors:', result.errors);
+        // console.error('Compilation errors:', result.errors);
         if (editorRef.current) {
           showErrorsInEditor(result.errors ?? [], editorRef.current);
         }
@@ -174,6 +174,205 @@ export const useCodeEditorLogic = (onCodeChange: (newCode: string) => void, onEx
         } : undefined,
         autoCloseBefore: syntaxConfig.languageConfiguration.autoCloseBefore || ")}]',;"
       });
+
+      interface ClassData {
+        properties: Array<{ name: string; type: string; description: string }>;
+        methods: Array<{
+          name: string;
+          returnType: string;
+          parameters: Array<{ name: string; type: string }>;
+          description: string;
+        }>;
+      }
+      
+      interface Parameter {
+        name: string;
+        type: string;
+      }
+      
+      interface Method {
+        name: string;
+        returnType: string;
+        parameters: Parameter[];
+        description: string;
+      }
+      
+      interface Property {
+        name: string;
+        type: string;
+        description: string;
+      }
+      
+      interface ClassData {
+        properties: Property[];
+        methods: Method[];
+      }
+      
+      interface LibraryCache {
+        [key: string]: ClassData;
+      }
+      
+      // Пример libraryCache с использованием интерфейсов
+      const libraryCache: LibraryCache = {
+        "BasePlayer": {
+          properties: [
+            { name: "Health", type: "int", description: "Current health of the player." },
+            { name: "Position", type: "Vector3", description: "Current position of the player in 3D space." },
+            { name: "IsAlive", type: "bool", description: "Indicates whether the player is alive." }
+          ],
+          methods: [
+            { name: "Move", returnType: "void", parameters: [{ name: "direction", type: "Vector3" }, { name: "speed", type: "float" }], description: "Moves the player." },
+            { name: "TakeDamage", returnType: "void", parameters: [{ name: "amount", type: "int" }], description: "Reduces health." }
+          ]
+        },
+        "Vector3": {
+          properties: [
+            { name: "x", type: "float", description: "The X component." },
+            { name: "y", type: "float", description: "The Y component." },
+            { name: "z", type: "float", description: "The Z component." },
+            { name: "Player", type: "BasePlayer", description: "The Z component." },
+          ],
+          methods: [
+            { name: "Normalize", returnType: "Vector3", parameters: [], description: "Returns unit vector." }
+          ]
+        }
+      };
+
+      // monaco.languages.registerCompletionItemProvider('csharp', {
+      //   triggerCharacters: ['.'],
+      //   provideCompletionItems: async (model, position) => {
+      //     console.log("🚀 Autocomplete triggered at position:", position);
+      
+      //     const wordUntilPosition = model.getWordUntilPosition(position);
+          
+      //     // Получаем текст текущей строки до позиции курсора
+      //     const textUntilPosition = model.getLineContent(position.lineNumber).slice(0, position.column - 1);
+      
+      //     // Разбиваем строку по точкам для определения вложенности, например "player.Position.x"
+      //     const tokens = textUntilPosition.split('.').map(token => token.trim()).filter(Boolean);
+      //     if (tokens.length === 0) {
+      //       console.log("❌ No variable found before the dot.");
+      //       return { suggestions: [] };
+      //     }
+      
+      //     let currentType: string | null = null;
+      
+      //     // Функция для определения типа переменной, используя библиотеку libraryCache
+      //     const getTypeFromCache = (typeName: string): ClassData | null => {
+      //       return libraryCache[typeName] || null;
+      //     };
+      
+      //     // Начинаем с поиска типа первой переменной
+      //     const rootVariable = tokens[0];
+      //     const textInModel = model.getValue();
+      //     const methodStartPattern = new RegExp(`(private|public|protected)?\\s+\\w+\\s+(\\w+)\\s*\\(([^)]*)\\)\\s*{`, 'g');
+      //     let methodStart: number | null = null;
+      //     let methodEnd: number | null = null;
+      //     let currentMethodParams = "";
+      
+      //     for (const match of textInModel.matchAll(methodStartPattern)) {
+      //       const startLineNumber = textInModel.slice(0, match.index).split('\n').length;
+      //       if (startLineNumber <= position.lineNumber) {
+      //         methodStart = startLineNumber;
+      //         currentMethodParams = match[3];
+      //       } else {
+      //         methodEnd = startLineNumber - 1;
+      //         break;
+      //       }
+      //     }
+      
+      //     if (methodStart && !methodEnd) {
+      //       methodEnd = model.getLineCount();
+      //     }
+      
+      //     console.log("📐 Method boundaries detected:", { methodStart, methodEnd });
+      //     console.log("🔍 Current method parameters:", currentMethodParams);
+      
+      //     if (!methodStart || !methodEnd) {
+      //       console.log("❌ No method boundaries found for the current position.");
+      //       return { suggestions: [] };
+      //     }
+      
+      //     // Проверка параметров метода для определения типа корневой переменной
+      //     for (const [typeName, typeInfo] of Object.entries(libraryCache)) {
+      //       const parameterPattern = new RegExp(`\\b${typeName}\\s+${rootVariable}\\b`);
+      //       if (parameterPattern.test(currentMethodParams)) {
+      //         currentType = typeName;
+      //         console.log(`🔍 Root variable '${rootVariable}' detected as type: ${currentType}`);
+      //         break;
+      //       }
+      //     }
+      
+      //     if (!currentType) {
+      //       console.log(`❌ No matching type found for root variable '${rootVariable}' in the current method parameters.`);
+      //       return { suggestions: [] };
+      //     }
+      
+      //     // Рекурсивно проходим по свойствам до последнего токена
+      //     for (let i = 1; i < tokens.length; i++) {
+      //       const currentToken = tokens[i];
+      //       const classData = getTypeFromCache(currentType);
+      
+      //       if (!classData) {
+      //         console.log(`❌ No type information found for '${currentType}' in libraryCache.`);
+      //         return { suggestions: [] };
+      //       }
+      
+      //       const property = classData.properties.find(prop => prop.name === currentToken);
+      //       if (!property) {
+      //         console.log(`❌ Property '${currentToken}' not found on type '${currentType}'.`);
+      //         return { suggestions: [] };
+      //       }
+      
+      //       currentType = property.type; // Устанавливаем текущий тип как тип свойства
+      //     }
+      
+      //     // Когда доходим до последнего токена, добавляем автодополнения для его типа
+      //     const finalClassData = getTypeFromCache(currentType);
+      //     if (!finalClassData) {
+      //       console.log(`❌ No type information found for '${currentType}' in libraryCache.`);
+      //       return { suggestions: [] };
+      //     }
+      
+      //     const range: monaco.IRange = {
+      //       startLineNumber: position.lineNumber,
+      //       endLineNumber: position.lineNumber,
+      //       startColumn: wordUntilPosition.startColumn,
+      //       endColumn: wordUntilPosition.endColumn,
+      //     };
+      
+      //     const suggestions: monaco.languages.CompletionItem[] = [];
+      //     console.log(`✅ Generating suggestions for type '${currentType}' properties and methods...`);
+      
+      //     finalClassData.properties.forEach((prop) => {
+      //       console.log("➡️ Adding property suggestion:", prop.name);
+      //       suggestions.push({
+      //         label: prop.name,
+      //         kind: monaco.languages.CompletionItemKind.Property,
+      //         insertText: prop.name,
+      //         detail: prop.type,
+      //         documentation: prop.description,
+      //         range: range,
+      //       });
+      //     });
+      
+      //     finalClassData.methods.forEach((method) => {
+      //       console.log("➡️ Adding method suggestion:", method.name);
+      //       suggestions.push({
+      //         label: method.name,
+      //         kind: monaco.languages.CompletionItemKind.Method,
+      //         insertText: `${method.name}(${method.parameters.map((p) => p.name).join(', ')})`,
+      //         detail: method.returnType,
+      //         documentation: method.description,
+      //         range: range,
+      //       });
+      //     });
+      
+      //     console.log("✅ Suggestions generated:", suggestions);
+      //     return { suggestions };
+      //   }
+      // });
+      
 
       monaco.languages.registerCompletionItemProvider('csharp', {
         triggerCharacters: ['.'],

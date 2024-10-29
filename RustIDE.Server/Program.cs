@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis.Completion;
 using RustIDE.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using RustIDE.Server.Data;
+using CompletionService = RustIDE.Server.Services.CompletionService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,7 @@ builder.Services.AddSwaggerGen();
 
 // Register services
 builder.Services.AddScoped<CodeExecutorService>();
+builder.Services.AddScoped<CompletionService>();
 builder.Services.AddSingleton<AIInteractionService>();
 builder.Services.AddSingleton<HooksService>();
 

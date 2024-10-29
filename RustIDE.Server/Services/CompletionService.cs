@@ -1,13 +1,16 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Completion;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using RustIDE.Server.Models;
+using Microsoft.CodeAnalysis.CSharp;
+using System.Collections.Immutable;
+using CompletionItem = RustIDE.Server.Models.CompletionItem;
 
 namespace RustIDE.Server.Services
 {
